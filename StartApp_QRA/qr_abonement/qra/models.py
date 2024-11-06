@@ -3,6 +3,9 @@ from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
 from datetime import date
 
+from rest_framework import request
+
+
 class Tariff(models.Model):
     DURATION_TYPE_CHOICES = [
         ('days', 'Fixed Number of Days'),  # фиксированное количество дней
@@ -15,6 +18,8 @@ class Tariff(models.Model):
     start_date = models.DateField(null=True, blank=True, verbose_name="Start Date")
     end_date = models.DateField(null=True, blank=True, verbose_name="End Date")
     max_visits = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1)], verbose_name="Maximum Visits")
+    is_morning = models.BooleanField("08:00-16:00", default=False)
+    is_evening = models.BooleanField("16:00-23:00", default=False)
     is_active = models.BooleanField(default=True, verbose_name="Is Active")
 
     def clean(self):
@@ -33,14 +38,20 @@ class Tariff(models.Model):
     def __str__(self):
         return self.name
 
-# class Provider(models.Model):
-#     pass
-#
-# class UserProfile(models.Model):
-#     pass
-#
-# class UserSubscription(models.Model):
-#     pass
-#
-# class Visit(models.Model):
-#     pass
+class UserProfile(models.Model):
+    unique_id = models.AutoField(primary_key=True)
+    full_name = models.CharField(max_length=255)
+    email = models.EmailField(unique=True)
+
+    def __str__(self):
+        return self.full_name
+
+class UserAbonement(models.Model):
+    unique_id = models.AutoField(primary_key=True)
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    tariff = models.ForeignKey('Tariff', on_delete=models.CASCADE)
+    days_count = models.IntegerField()
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.user_profile.full_name} - {self.tariff.name}"
